@@ -64,9 +64,12 @@ class SentenceProcessing(object):
         transferred_encoded_text = []
         for encoded_sent in local_encoded_text:
             transfered_encoded_sent = []
-            for encoded_word in encoded_sent:
-                transfered_encoded_sent.append(transfer_dict[encoded_word])
-            transferred_encoded_text.append(transfered_encoded_sent)
+            try:
+                for encoded_word in encoded_sent:
+                    transfered_encoded_sent.append(transfer_dict[encoded_word])
+                transferred_encoded_text.append(transfered_encoded_sent)
+            except:
+                pass
 
         file_name = multi_processing.get_file_name(local_dict_file_path).replace("dict_", "")
         # Word count

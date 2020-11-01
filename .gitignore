@@ -7,3 +7,5 @@ output/
 LICENSE.txt
 server_output/
 corpus2graph.egg-info/
+.vscode/launch.json
+.vscode/settings.json

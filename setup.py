@@ -29,12 +29,13 @@ setup(
 
     packages=find_packages(),  # Required
     install_requires=['nltk >= 3.2.5',
-                      'docopt >= 0.6.2'
+                      'docopt >= 0.6.2',
+                      'spacy >= 2.3'
                       ],  # Optional
 
     entry_points={  # Optional
         'console_scripts': [
-            'corpus2graph=corpus2graph.applications.corpus2graph:main',
+            'corpus2graph=corpus2graph.applications.c2g:main',
         ],
     },
 

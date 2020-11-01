@@ -3,13 +3,14 @@ import warnings
 import re
 from . import util
 import spacy
-
+import json
 
 class FileParser(object):
     def __init__(self,
                  file_parser='txt',
-                 xml_node_path=None, fparser=None):
-        if file_parser not in ['txt', 'xml', 'defined']:
+                 xml_node_path=None,
+                 json_attribute=None, fparser=None):
+        if file_parser not in ['txt', 'xml', 'json', 'defined']:
             msg = 'file_parser should be txt, xml or defined, not "{file_parser}"'
             raise ValueError(msg.format(file_parser=file_parser))
         if file_parser == 'defined' and fparser is None:
@@ -17,6 +18,7 @@ class FileParser(object):
             raise ValueError(msg)
         self.file_parser = file_parser
         self.xml_node_path = xml_node_path
+        self.json_attribute = json_attribute
         self.fparser = fparser
 
     def xml_parser(self, file_path, xml_node_path):
@@ -29,12 +31,23 @@ class FileParser(object):
             for line in file:
                 yield str.strip(line)
 
+    def json_parser(self, file_path, json_attribute):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            #TODO: Support json attribute path
+            for sent in util.tokenize_informal_paragraph_into_sentences(json.load(file)[json_attribute]):
+                yield str.strip(sent)
+
+    
+
     def __call__(self, file_path):
         if self.file_parser == 'txt':
             for sent in self.txt_parser(file_path):
                 yield sent
         if self.file_parser == 'xml':
             for sent in self.xml_parser(file_path, self.xml_node_path):
+                yield sent
+        if self.file_parser == 'json':
+            for sent in self.json_parser(file_path, self.json_attribute):
                 yield sent
         if self.file_parser == 'defined':
             for sent in self.fparser(file_path):

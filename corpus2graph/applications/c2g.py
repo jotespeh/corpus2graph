@@ -2,20 +2,24 @@
 generate graph from file
 
 Usage:
-    corpus2graph all [--process_num=<process_num> --lang=<lang> --max_window_size=<max_window_size> --min_count=<min_count> --max_vocab_size=<max_vocab_size> --safe_files_number_per_processor=<safe_files_number_per_processor>] <data_dir> <output_dir>
-    corpus2graph wordprocessing [--process_num=<process_num> --lang=<lang>] <data_dir> <output_dir>
-    corpus2graph sentenceprocessing [--max_window_size=<max_window_size> --process_num=<process_num>] <data_dir> <output_dir>
-    corpus2graph wordpairsprocessing [--max_window_size=<max_window_size> --process_num=<process_num> --min_count=<min_count> --max_vocab_size=<max_vocab_size> --safe_files_number_per_processor=<safe_files_number_per_processor>] <data_dir> <output_dir>
-    corpus2graph -h | --help
-    corpus2graph --version
+    c2g all [--process_num=<process_num> --config=<config> --lang=<lang> --max_window_size=<max_window_size> --min_count=<min_count> --max_vocab_size=<max_vocab_size> --safe_files_number_per_processor=<safe_files_number_per_processor> --file_parser=<file_parser>] <data_dir> <output_dir>
+    c2g wordprocessing [--process_num=<process_num> --lang=<lang>] <data_dir> <output_dir>
+    c2g sentenceprocessing [--max_window_size=<max_window_size> --process_num=<process_num>] <data_dir> <output_dir>
+    c2g wordpairsprocessing [--max_window_size=<max_window_size> --process_num=<process_num> --min_count=<min_count> --max_vocab_size=<max_vocab_size> --safe_files_number_per_processor=<safe_files_number_per_processor>] <data_dir> <output_dir>
+    c2g -h | --help
+    c2g --version
 Options:
     <data_dir>                                                            Set data directory. This script expects
                                                                           all corpus data store in this directory
     <output_dir>                                                          Set output directory. The output graph matrix and
                                                                           other intermediate data will be stored in this directory.
                                                                           see "Output directory" section for more details
+    --file_parser=<file_parser>                                           File parser to use supported are json, txt and xml file types.
+                                                                          [default: txt]
+    --json_attribute=<json_attribute>                                     Key from which to extract the sentences when given a json file
+                                                                          [default: maintext]                                                                          
     --lang=<lang>                                                         The language used for stop words, tokenizer, stemmer
-                                                                          [default: 'en']
+                                                                          [default: en]
     --max_window_size=<max_window_size>                                   The maximum window size to generate the word pairs.
                                                                           [default: 5]
     --process_num=<process_num>                                           The number of process you want to use.
@@ -48,10 +52,21 @@ Output directory:
 from corpus2graph import Tokenizer, WordProcessing, SentenceProcessing, WordPairsProcessing, util
 from docopt import docopt
 import time
-
+import json
 
 def main():
     arguments = docopt(__doc__, version='1.O.O')
+
+    if arguments['--config']:
+        try:
+            with open(arguments['--config'], 'r') as f:
+                config_file = json.load(f)
+            # Merge ClI arguments with those from the config file, the former taking priority
+            arguments = dict((str(key), arguments.get(key) or config_file.get(key))
+                for key in set(config_file) | set(arguments))
+        except FileNotFoundError:
+            print(arguments['--config'] + ' does not exist, please check again.') 
+
 
     if arguments['all']:
         data_folder = arguments['<data_dir>']
@@ -79,11 +94,13 @@ def main():
         safe_files_number_per_processor = int(arguments['--safe_files_number_per_processor'])
         max_vocab_size = int(arguments['--max_vocab_size'])
         min_count = int(arguments['--min_count'])
-
+        # file parser settings
+        file_parser = arguments['--file_parser']
+        json_attribute = arguments['--json_attribute']
         start_time = time.time()
         # wordprocessing
         wp = WordProcessing(output_folder=dicts_folder, language=lang, word_tokenizer='spacy', wtokenizer=Tokenizer.mytok,
-                            remove_stop_words=True, remove_numbers=True, replace_digits_to_zeros=True,
+                            remove_stop_words=True, remove_numbers=True, replace_digits_to_zeros=True, file_parser=file_parser, json_attribute=json_attribute,
                             remove_punctuations=True, stem_word=False, lowercase=True)
         merged_dict = wp.apply(data_folder=data_folder, process_num=process_num)
         # sentenceprocessing
@@ -176,3 +193,6 @@ def main():
         result = wpp.apply(process_num=process_num)
         # wpp.multiprocessing_merge_edges_count_of_a_specific_window_size(process_num=process_num, already_existed_window_size=4)
         print('time for word pairs processing in seconds:', util.count_time(start_time))
+
+if __name__ == '__main__':
+    main()

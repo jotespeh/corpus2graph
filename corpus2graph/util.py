@@ -7,7 +7,7 @@ import errno
 
 def tokenize_informal_paragraph_into_sentences(paragraph):
     # TODO Using Pierre's slide to make replacement rule more accurate
-    paragraph = paragraph.replace(".", ". ")
+    paragraph = str(paragraph).replace(".", ". ")
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     return tokenizer.tokenize(paragraph)
 
@@ -57,8 +57,12 @@ def read_two_columns_file_to_build_dictionary_type_specified(file, key_type, val
     d = {}
     with open(file, encoding='utf-8') as f:
         for line in f:
-            (key, val) = line.rstrip('\n').split("\t")
-            d[key_type(key)] = value_type(val)
+            try:
+                (key, val) = line.rstrip('\n').split("\t")
+                if(key != ''):
+                    d[key_type(key)] = value_type(val)
+            except:
+                pass
         return d
 
 

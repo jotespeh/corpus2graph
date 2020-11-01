@@ -4,15 +4,15 @@ from . import util
 from . import multi_processing
 from .word_processor import FileParser, WordPreprocessor, Tokenizer
 import spacy
-
+import json
 
 class WordProcessing(object):
     def __init__(self, output_folder, language='en', file_parser='txt', fparser=None,
-                 xml_node_path=None, word_tokenizer='WordPunct', wtokenizer=None,
+                 xml_node_path=None, json_attribute=None, word_tokenizer='WordPunct', wtokenizer=None,
                  remove_stop_words=True, remove_numbers=True, remove_punctuations=True, replace_digits_to_zeros=True,
                  stem_word=True, lowercase=True, wpreprocessor=None):
         self.output_folder = output_folder
-        self.file_parser = FileParser(file_parser=file_parser, xml_node_path=xml_node_path, fparser=fparser)
+        self.file_parser = FileParser(file_parser=file_parser, xml_node_path=xml_node_path, json_attribute=json_attribute, fparser=fparser)
         # TODO NOW Ruiqing user defined file_parser yield type check
         self.file_extension = file_parser
         self.word_preprocessor = WordPreprocessor(remove_numbers=remove_numbers,
@@ -26,11 +26,11 @@ class WordProcessing(object):
         self.remove_stop_words = remove_stop_words
         self.tokenizer = Tokenizer(word_tokenizer=word_tokenizer, wtokenizer=wtokenizer)
 
-    def fromfile(self, file_path):
+    def fromfile(self, file_path, attributes=True):
         """
         master sends jobs to processors, each processor takes one file at one time and execute this function.
         """
-        print('Processing file %s (%s)...' % (file_path, multi_processing.get_pid()))
+        print('Processing file %s (PID: %s)...' % (file_path, multi_processing.get_pid()))
 
         """
         Give spacy tokenizer special treatment here (not in Tokenizer in word_processor.py).
@@ -39,15 +39,25 @@ class WordProcessing(object):
         So it can't be transferred as an object by using 'self', self.tokenizer is useless in this case.
         Each thread loads spacy once when a job has been sent to this thread.        
         """
+
         spacy_loader = None
         if self.word_tokenizer == 'spacy' or self.remove_stop_words:
             if self.language == 'en':
-                # print('en spacy tokenizer loaded')
-                spacy_loader = spacy.load('en')
+                try:
+                    spacy_loader = spacy.load('en')
+                except OSError:
+                    print('Cannot find model ' + self.language + '.\nPlease install it via pip:\npython -m spacy download ' + self.language)
             elif self.language == 'fr':
-                # print('fr spacy tokenizer loaded')
-                spacy_loader = spacy.load('fr')
-
+                try:
+                    spacy_loader = spacy.load('fr')
+                except OSError:
+                    print('Cannot find model ' + self.language + '.\nPlease install it via pip:\npython -m spacy download ' + self.language)
+            elif self.language == 'de':
+                try:
+                    spacy_loader = spacy.load('de')
+                except OSError:
+                    print('Cannot find model ' + self.language + '.\nPlease install it via pip:\npython -m spacy download ' + self.language)
+        
         word2id = dict()  # key: word <-> value: index
         id2word = dict()
         encoded_text = []
@@ -76,13 +86,26 @@ class WordProcessing(object):
         # Write the dictionary
         util.write_dict(self.output_folder + "dict_" + parent_folder_name + "_" + file_basename + ".dicloc", word2id)
 
+        if attributes:
+            attributes_dict = {}
+            with open(file_path) as f:
+                attributes_dict = json.load(f)
+            with open(self.output_folder + "attributes_" + parent_folder_name + "_" + file_basename + ".txt", 'w') as out:
+                out.write(f'date\ttitle\turl\n')
+                out.write(f'{attributes_dict["date_publish"]}\t{attributes_dict["title"]}\t{attributes_dict["url"]}')
+
     @staticmethod
     def read_first_column_file_to_build_set(file):
         d = set()
         with open(file, encoding='utf-8') as f:
             for line in f:
-                (key, val) = line.rstrip('\n').split("\t")
-                d.add(key)
+                try:
+                    (key, val) = line.rstrip('\n').split("\t")
+                    # prevent empty keys
+                    if(key != ''):
+                        d.add(key)
+                except:
+                    continue
         return d
 
     def local_dicts_merger_worker(self, file_paths):
