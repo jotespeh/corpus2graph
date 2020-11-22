@@ -4,7 +4,7 @@ from . import util
 from . import multi_processing
 from .word_processor import FileParser, WordPreprocessor, Tokenizer
 import spacy
-import json
+import orjson
 
 class WordProcessing(object):
     def __init__(self, output_folder, language='en', file_parser='txt', fparser=None,
@@ -89,10 +89,16 @@ class WordProcessing(object):
         if attributes:
             attributes_dict = {}
             with open(file_path) as f:
-                attributes_dict = json.load(f)
-            with open(self.output_folder + "attributes_" + parent_folder_name + "_" + file_basename + ".txt", 'w') as out:
-                out.write(f'date\ttitle\turl\n')
-                out.write(f'{attributes_dict["date_publish"]}\t{attributes_dict["title"]}\t{attributes_dict["url"]}')
+                attributes_dict = orjson.loads(f.read())
+            with open(self.output_folder + "edges_author_" + parent_folder_name + "_" + file_basename + ".txt", 'w') as out_edges:
+                with open(self.output_folder + "nodes_author_" + parent_folder_name + "_" + file_basename + ".txt", 'w') as out_nodes:
+                    # out.write(f'author\tarticle_id\t:LABEL\n')
+                    for author in attributes_dict['authors']:
+                        out_edges.write(f'{author}\t{file_basename}\t:WROTE\n')
+                        out_nodes.write(f'{author}\t{attributes_dict["source_domain"]}\tAuthor\n')
+            with open(self.output_folder + "nodes_article_" + parent_folder_name + "_" + file_basename + ".txt", 'w') as out:
+                # out.write(f'article_id\tdate\ttitle\turl\n')
+                out.write(f'{file_basename}\t{attributes_dict["date_publish"]}\t{attributes_dict["title"]}\t{attributes_dict["url"]}\tArticle')
 
     @staticmethod
     def read_first_column_file_to_build_set(file):
@@ -134,6 +140,7 @@ class WordProcessing(object):
             p.join()
             print('All sub-processes done.')
 
+            # support updates here by supplying dict
             all_keys = set()
             for sub_merged_dict in sub_merged_dicts:
                 all_keys |= sub_merged_dict

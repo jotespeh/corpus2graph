@@ -59,8 +59,15 @@ class WordPairsProcessing(object):
 
             valid_vocabulary = dict.fromkeys(util.read_valid_vocabulary(file_path=self.valid_vocabulary_path))
             for file in edges_files_paths:
-                yield Counter(dict(Counter(
+                edge_count = Counter(dict(Counter(
                     read_edges_file_with_respect_to_valid_vocabulary(file_path=file, valid_vocabulary_dict=valid_vocabulary))))
+                with open(file.rsplit('.')[0] + '_counted.txt', 'w') as out:
+                    base = file.split('_', 1)[1].rsplit('_encoded')[0]
+                    for key, value in edge_count.items():
+                        key_str = '\t'.join(map(str, key))
+                        # 'from,to,weight,article'
+                        out.write('%s\t%s\t%s\tCOOCCURS_WITH\n' % (key_str, value, base))
+                yield edge_count
 
         total = len(edges_files_paths)
         print(total, "files to be counted.")

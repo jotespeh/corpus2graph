@@ -49,7 +49,7 @@ Output directory:
         Todo
 """
 
-from corpus2graph import Tokenizer, WordProcessing, SentenceProcessing, WordPairsProcessing, util
+from corpus2graph import Tokenizer, WordProcessing, SentenceProcessing, WordPairsProcessing, util, post_processing
 from docopt import docopt
 import time
 import json
@@ -114,6 +114,10 @@ def main():
                                   safe_files_number_per_processor=safe_files_number_per_processor)
         result = wpp.apply(process_num=process_num)
         # wpp.multiprocessing_merge_edges_count_of_a_specific_window_size(process_num=process_num, already_existed_window_size=4)
+
+        post_processing.merge_unique_to_single_file(path=dicts_folder,
+            file_pattern='nodes_author',
+            output_file=output_folder + '/nodes_author.txt')
         print('time in seconds:', util.count_time(start_time))
 
     if arguments['wordprocessing']:

@@ -4,7 +4,6 @@ import nltk.data
 import os
 import errno
 
-
 def tokenize_informal_paragraph_into_sentences(paragraph):
     # TODO Using Pierre's slide to make replacement rule more accurate
     paragraph = str(paragraph).replace(".", ". ")
@@ -106,9 +105,12 @@ def write_to_pickle(object_to_write, pickle_path):
         pickle.dump(object_to_write, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def write_dict_type_specified(file_path, dictionary, key_type):
+def write_dict_type_specified(file_path, dictionary, key_type, id_to_add=None):
     with open(file_path, 'w') as f:
-        if key_type is 'str':
+        if id_to_add:
+            for key, value in dictionary.items():
+                f.write('%s\t%s\t%s\tOCCURS_IN\n' % (str(key), str(value), id_to_add))
+        elif key_type is 'str':
             for key, value in dictionary.items():
                 f.write('%s\t%s\n' % (str(key), str(value)))
         elif key_type is 'int':

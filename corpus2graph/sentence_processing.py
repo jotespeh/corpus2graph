@@ -20,6 +20,7 @@ class SentenceProcessing(object):
         result = dict(Counter([item for sublist in encoded_text for item in sublist]))
         folder_name = multi_processing.get_file_folder(local_dict_file_path)
         util.write_dict_type_specified(folder_name + "/word_count_" + file_name + ".txt", result, 'str')
+        util.write_dict_type_specified(folder_name + "/edges_word_count_" + file_name + ".txt", result, 'str', file_name.split('_', 1)[1])
         return result
 
     def get_transfer_dict_for_local_dict(self, local_dict, merged_dict):

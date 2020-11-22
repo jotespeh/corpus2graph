@@ -3,7 +3,8 @@ import warnings
 import re
 from . import util
 import spacy
-import json
+import orjson
+import mmap
 
 class FileParser(object):
     def __init__(self,
@@ -33,9 +34,10 @@ class FileParser(object):
 
     def json_parser(self, file_path, json_attribute):
         with open(file_path, 'r', encoding='utf-8') as file:
-            #TODO: Support json attribute path
-            for sent in util.tokenize_informal_paragraph_into_sentences(json.load(file)[json_attribute]):
-                yield str.strip(sent)
+            with mmap.mmap(file.fileno(), length=0, access=mmap.ACCESS_READ) as fd:
+                #TODO: Support json attribute path
+                for sent in util.tokenize_informal_paragraph_into_sentences(orjson.loads(fd.read())[json_attribute]):
+                    yield str.strip(sent)
 
     
 
@@ -156,6 +158,7 @@ class Tokenizer(object):
                     self.tokenizer = wtokenizer
 
     def apply(self, text, spacy_loader=None):
+        #TODO: Named Entitiy Recognition here
         if self.word_tokenizer == 'spacy':
             return [token.text for token in spacy_loader(text)]
         if self.tokenizer is not None:
